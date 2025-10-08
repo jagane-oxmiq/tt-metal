@@ -6,6 +6,36 @@
 
 #include "dataflow_api.h"
 
+// MXFP4 to FP32 conversion function
+inline void convert_mxfp4_to_fp32_tile(uint32_t* mxfp4_tile, uint32_t* fp32_tile, uint32_t tile_size) {
+    // MXFP4 format: 4-bit mantissa with shared 8-bit exponent per block
+    // Conversion: Extract 4-bit values and reconstruct FP32
+    constexpr uint32_t MXFP4_BLOCK_SIZE = 32;  // 32 4-bit values share one exponent
+
+    for (uint32_t i = 0; i < tile_size / MXFP4_BLOCK_SIZE; i++) {
+        // Extract shared exponent (stored at beginning of each block)
+        uint8_t shared_exp = (mxfp4_tile[i * 5] >> 24) & 0xFF;  // First byte contains shared exponent
+
+        // Process 32 4-bit values in the block
+        for (uint32_t j = 0; j < MXFP4_BLOCK_SIZE; j++) {
+            uint32_t byte_idx = (i * 5) + (j / 8) + 1;  // Skip exponent byte
+            uint32_t nibble_idx = j % 8;
+
+            // Extract 4-bit mantissa
+            uint8_t mxfp4_val = (mxfp4_tile[byte_idx] >> (nibble_idx * 4)) & 0x0F;
+
+            // Convert to FP32
+            if (mxfp4_val == 0) {
+                fp32_tile[i * MXFP4_BLOCK_SIZE + j] = 0;
+            } else {
+                // Reconstruct FP32: sign=0, exp=shared_exp, mantissa from 4-bit value
+                uint32_t fp32_val = ((uint32_t)shared_exp << 23) | ((uint32_t)mxfp4_val << 19);
+                fp32_tile[i * MXFP4_BLOCK_SIZE + j] = fp32_val;
+            }
+        }
+    }
+}
+
 void kernel_main() {
     bool one_time_profile = true;
 
@@ -42,6 +72,10 @@ void kernel_main() {
     uint32_t batch = get_arg_val<uint32_t>(19);
     uint32_t bcast_B = get_arg_val<uint32_t>(20);
 
+    // MXFP4 quantization flags (new args)
+    uint32_t in0_is_mxfp4 = get_arg_val<uint32_t>(21);
+    uint32_t in1_is_mxfp4 = get_arg_val<uint32_t>(22);
+
     constexpr auto in0_args = TensorAccessorArgs<0>();
     constexpr auto in1_args = TensorAccessorArgs<in0_args.next_compile_time_args_offset()>();
 
@@ -72,6 +106,14 @@ void kernel_main() {
                 uint32_t in0_tensor_tile_id = in0_tensor_row_start_tile_id;
                 for (uint32_t w = 0; w < in0_block_w; w++) {
                     noc_async_read_tile(in0_tensor_tile_id, s0, l1_write_addr_in0);
+
+                    // Convert MXFP4 to FP32 if needed
+                    if (in0_is_mxfp4) {
+                        uint32_t* tile_ptr = (uint32_t*)l1_write_addr_in0;
+                        uint32_t tile_elements = in0_single_tile_size_bytes / sizeof(uint32_t);
+                        convert_mxfp4_to_fp32_tile(tile_ptr, tile_ptr, tile_elements);
+                    }
+
                     l1_write_addr_in0 += in0_single_tile_size_bytes;
                     in0_tensor_tile_id += in0_tensor_stride_w;
                 }
@@ -84,6 +126,14 @@ void kernel_main() {
                 uint32_t in1_tensor_tile_id = in1_tensor_row_start_tile_id;
                 for (uint32_t w = 0; w < in1_block_w; w++) {
                     noc_async_read_tile(in1_tensor_tile_id, s1, l1_write_addr_in1);
+
+                    // Convert MXFP4 to FP32 if needed
+                    if (in1_is_mxfp4) {
+                        uint32_t* tile_ptr = (uint32_t*)l1_write_addr_in1;
+                        uint32_t tile_elements = in1_single_tile_size_bytes / sizeof(uint32_t);
+                        convert_mxfp4_to_fp32_tile(tile_ptr, tile_ptr, tile_elements);
+                    }
+
                     l1_write_addr_in1 += in1_single_tile_size_bytes;
                     in1_tensor_tile_id += in1_tensor_stride_w;
                 }

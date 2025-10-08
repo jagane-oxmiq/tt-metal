@@ -142,6 +142,10 @@ tt_metal::operation::ProgramWithCallbacks create_program(
             int core_idx_y = num_blocks_read / num_cores_x;
             CoreCoord core = {(std::size_t)core_idx_x, (std::size_t)core_idx_y};
 
+            // Check if input formats are MXFP4
+            uint32_t in0_is_mxfp4 = (in0_cb_data_format == tt::DataFormat::Mxfp4) ? 1 : 0;
+            uint32_t in1_is_mxfp4 = (in1_cb_data_format == tt::DataFormat::Mxfp4) ? 1 : 0;
+
             // Write runtime args to device
             std::vector<uint32_t> mm_reader_args = {
                 (std::uint32_t)in0_buffer->address(),          // in0_tensor_addr
@@ -166,11 +170,18 @@ tt_metal::operation::ProgramWithCallbacks create_program(
 
                 (std::uint32_t)K / in0_block_w,  // num_blocks
 
-                (std::uint32_t)M * K,       // MtKt
-                (std::uint32_t)K * N,       // KtNt
-                (std::uint32_t)B,           // batch
-                (std::uint32_t)bcast_batch  // bcast_B
+                (std::uint32_t)M * K,        // MtKt
+                (std::uint32_t)K * N,        // KtNt
+                (std::uint32_t)B,            // batch
+                (std::uint32_t)bcast_batch,  // bcast_B
+
+                // MXFP4 quantization flags
+                (std::uint32_t)in0_is_mxfp4,  // in0_is_mxfp4
+                (std::uint32_t)in1_is_mxfp4   // in1_is_mxfp4
             };
+
+            // Check if output format is MXFP4
+            uint32_t out_is_mxfp4 = (out_cb_data_format == tt::DataFormat::Mxfp4) ? 1 : 0;
 
             std::vector<uint32_t> writer_args = {
                 (std::uint32_t)out_buffer->address(),  // out_tensor_addr
@@ -188,7 +199,10 @@ tt_metal::operation::ProgramWithCallbacks create_program(
                 (std::uint32_t)(per_core_M / out_subblock_h),      // out_num_subblocks_h
 
                 (std::uint32_t)M * N,  // MtNt
-                (std::uint32_t)B       // batch
+                (std::uint32_t)B,      // batch
+
+                // MXFP4 quantization flag
+                (std::uint32_t)out_is_mxfp4  // out_is_mxfp4
             };
 
             tt_metal::SetRuntimeArgs(program, mm_reader_kernel_id, core, mm_reader_args);

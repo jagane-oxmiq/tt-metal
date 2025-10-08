@@ -54,6 +54,7 @@ enum DataFormat : uint8 {
   UInt16 = 9,
   Int32 = 8,
   UInt32 = 24,
+  Mxfp4 = 27, // 0x1B in decimal
   RawUInt8 = 240, // 0xf0 in decimal
   RawUInt16 = 241, // 0xf1 in decimal
   RawUInt32 = 242, // 0xf2 in decimal

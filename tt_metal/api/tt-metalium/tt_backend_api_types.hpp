@@ -39,6 +39,7 @@ enum class DataFormat : uint8_t {
     UInt16 = 9,
     Int32 = 8,
     UInt32 = 24,
+    Mxfp4 = 0x1B,
     RawUInt8 = 0xf0,
     RawUInt16 = 0xf1,
     RawUInt32 = 0xf2,
@@ -70,9 +71,11 @@ inline std::ostream& operator<<(std::ostream& os, const DataFormat& format) {
         case DataFormat::Int8: os << "Int8"; break;
         case DataFormat::UInt8: os << "UInt8"; break;
         case DataFormat::Lf8: os << "Lf8"; break;
+        case DataFormat::Fp8_e4m3: os << "Fp8_e4m3"; break;
         case DataFormat::UInt16: os << "UInt16"; break;
         case DataFormat::UInt32: os << "UInt32"; break;
         case DataFormat::Int32: os << "Int32"; break;
+        case DataFormat::Mxfp4: os << "Mxfp4"; break;
         case DataFormat::RawUInt8: os << "RawUInt8"; break;
         case DataFormat::RawUInt16: os << "RawUInt16"; break;
         case DataFormat::RawUInt32: os << "RawUInt32"; break;
@@ -90,13 +93,15 @@ constexpr static uint32_t datum_size(const DataFormat& format) {
         case DataFormat::Bfp4:
         case DataFormat::Bfp4_b:
         case DataFormat::Bfp8:
-        case DataFormat::Bfp8_b: throw std::invalid_argument("datum for bfp2, bfp4, bfp8 is invalid");
+        case DataFormat::Bfp8_b:
+        case DataFormat::Mxfp4: throw std::invalid_argument("datum for bfp2, bfp4, bfp8, mxfp4 is invalid");
         case DataFormat::Float16:
         case DataFormat::Float16_b: return 2;
         case DataFormat::Float32: return 4;
         case DataFormat::Tf32: throw std::invalid_argument("TF32 unsupported atm");
         case DataFormat::Int8:
         case DataFormat::Lf8:
+        case DataFormat::Fp8_e4m3:
         case DataFormat::UInt8:
         case DataFormat::RawUInt8: return 1;
         case DataFormat::UInt16:

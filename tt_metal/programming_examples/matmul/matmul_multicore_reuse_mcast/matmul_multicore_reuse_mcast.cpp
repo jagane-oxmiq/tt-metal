@@ -402,10 +402,14 @@ void matmul_multicore_reuse_mcast(
                 (std::uint32_t)in1_mcast_sender_semaphore_id,
                 (std::uint32_t)in1_mcast_receiver_semaphore_id,
 
-                (std::uint32_t)Mt * Kt,     // MtKt
-                (std::uint32_t)Kt * Nt,     // KtNt
-                (std::uint32_t)B,           // batch
-                (std::uint32_t)bcast_batch  // bcast_B
+                (std::uint32_t)Mt * Kt,      // MtKt
+                (std::uint32_t)Kt * Nt,      // KtNt
+                (std::uint32_t)B,            // batch
+                (std::uint32_t)bcast_batch,  // bcast_B
+
+                // MXFP4 quantization flags
+                (std::uint32_t)0,  // in0_is_mxfp4
+                (std::uint32_t)0   // in1_is_mxfp4
             };
 
             std::vector<uint32_t> writer_args = {
@@ -423,7 +427,10 @@ void matmul_multicore_reuse_mcast(
                 (std::uint32_t)(per_core_M / out_subblock_h),      // out_num_subblocks_h
 
                 (std::uint32_t)Mt * Nt,  // MtNt
-                (std::uint32_t)B         // batch
+                (std::uint32_t)B,        // batch
+
+                // MXFP4 quantization flag
+                (std::uint32_t)0  // out_is_mxfp4
             };
 
             if (core_idx_x == 0 and core_idx_y == 0) {

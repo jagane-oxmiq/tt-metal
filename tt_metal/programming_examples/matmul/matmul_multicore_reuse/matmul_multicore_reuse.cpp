@@ -297,10 +297,14 @@ void matmul_multicore_reuse(
 
                 (std::uint32_t)Kt / in0_block_w,  // num_blocks
 
-                (std::uint32_t)Mt * Kt,     // MtKt
-                (std::uint32_t)Kt * Nt,     // KtNt
-                (std::uint32_t)B,           // batch
-                (std::uint32_t)bcast_batch  // bcast_B
+                (std::uint32_t)Mt * Kt,      // MtKt
+                (std::uint32_t)Kt * Nt,      // KtNt
+                (std::uint32_t)B,            // batch
+                (std::uint32_t)bcast_batch,  // bcast_B
+
+                // MXFP4 quantization flags
+                (std::uint32_t)0,  // in0_is_mxfp4
+                (std::uint32_t)0   // in1_is_mxfp4
             };
 
             std::vector<uint32_t> writer_args = {
@@ -319,7 +323,10 @@ void matmul_multicore_reuse(
                 (std::uint32_t)(per_core_M / out_subblock_h),      // out_num_subblocks_h
 
                 (std::uint32_t)Mt * Nt,  // MtNt
-                (std::uint32_t)B         // batch
+                (std::uint32_t)B,        // batch
+
+                // MXFP4 quantization flag
+                (std::uint32_t)0  // out_is_mxfp4
             };
 
             tt_metal::SetRuntimeArgs(program, reader_id, core, mm_reader_args);

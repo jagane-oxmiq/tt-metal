@@ -81,6 +81,7 @@ flatbuffer::DataFormat to_flatbuffer(tt::DataFormat input) {
         case tt::DataFormat::UInt16: return flatbuffer::DataFormat::UInt16;
         case tt::DataFormat::Int32: return flatbuffer::DataFormat::Int32;
         case tt::DataFormat::UInt32: return flatbuffer::DataFormat::UInt32;
+        case tt::DataFormat::Mxfp4: return flatbuffer::DataFormat::Mxfp4;
         case tt::DataFormat::RawUInt8: return flatbuffer::DataFormat::RawUInt8;
         case tt::DataFormat::RawUInt16: return flatbuffer::DataFormat::RawUInt16;
         case tt::DataFormat::RawUInt32: return flatbuffer::DataFormat::RawUInt32;
